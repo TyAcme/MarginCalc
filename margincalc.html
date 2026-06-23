@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Margin" />
+  <meta name="description" content="Two-tier vendor, disty, reseller margin and profit calculator." />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#e9edf3" />
+  <title>Two-tier Margin Calculator</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%238b1a1a'/%3E%3Cline x1='32' y1='9' x2='32' y2='55' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M46 19 Q46 11 32 11 Q18 11 18 20 Q18 29 32 32 Q46 35 46 44 Q46 53 32 53 Q18 53 18 45' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%238b1a1a'/%3E%3Cline x1='32' y1='9' x2='32' y2='55' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M46 19 Q46 11 32 11 Q18 11 18 20 Q18 29 32 32 Q46 35 46 44 Q46 53 32 53 Q18 53 18 45' fill='none' stroke='white' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #e9edf3;
+      --surface: #ffffff;
+      --border: #d0d6e0;
+      --text: #1a1f2e;
+      --text-muted: #6b7585;
+      --accent: #2563eb;
+      --accent-light: #eff4ff;
+      --section-bg: #f5f5f5;   /* consistent light grey for all sections */
+      --radius: 12px;
+      --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+
+      /* Field states */
+      --field-default-bg: #efefef;
+      --field-locked-bg: #fdf8e1;
+      --field-locked-border: #e8d97a;
+      --field-calc-bg: #eaf4ec;
+      --field-calc-border: #8dca97;
+
+      /* Header bubble */
+      --header-bg: #8b1a1a;   /* deep red */
+
+      font-size: 17.6px; /* 16px × 1.1 = 17.6px base */
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 26px 18px 52px;
+    }
+
+    /* ── Header bubble ── */
+    .page-header {
+      width: 100%;
+      max-width: 484px;
+      background: var(--header-bg);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
+      padding: 11px 22px;
+      border-radius: 10px;
+      margin-bottom: 22px;
+      box-shadow: 0 2px 10px rgba(139,26,26,0.30);
+      text-align: center;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 484px; /* 440 × 1.1 */
+      overflow: hidden;
+    }
+
+    /* ── Tabs as pill buttons ── */
+    .tabs {
+      display: flex;
+      gap: 9px;
+      padding: 15px 18px 13px;
+      border-bottom: 1px solid var(--border);
+      background: #f4f6fa;
+    }
+    .tab {
+      flex: 1;
+      padding: 9px 0;
+      text-align: center;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      font-family: inherit;
+      transition: all 0.18s;
+      letter-spacing: 0.02em;
+    }
+    .tab:hover:not(.active) {
+      background: #e8eaf0;
+      color: var(--text);
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+    }
+
+    /* ── Section groups — all same light grey ── */
+    .section-group {
+      background: var(--section-bg);
+      padding: 9px 13px 7px;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Rows ── */
+    .row {
+      display: grid;
+      /* label | symbol | input | clear | lock */
+      grid-template-columns: 140px 18px 1fr 28px 33px;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 2px;
+    }
+
+    .row-label {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    /* ── Symbol column ($  %) — always left-aligned, inherits bold from wrap state ── */
+    .sym {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 400;       /* default: normal */
+      user-select: none;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    /* When wrapping input-wrap is calc → sym goes bold too */
+    .is-calc-sym  { font-weight: 700; color: var(--text); }
+    .is-locked-sym { font-weight: 700; color: #a07c00; }
+
+    /* ── Input wrap ── */
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--field-default-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      transition: border-color 0.15s, background 0.15s;
+      min-width: 0;
+    }
+    .input-wrap:focus-within {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .input-wrap.is-locked {
+      background: var(--field-locked-bg) !important;
+      border-color: var(--field-locked-border) !important;
+    }
+    .input-wrap.is-calc {
+      background: var(--field-calc-bg);
+      border-color: var(--field-calc-border);
+    }
+    .input-wrap.is-calc:focus-within {
+      border-color: #4cae5a;
+      background: #ddf4e0;
+    }
+
+    .input-wrap input {
+      border: none;
+      background: none;
+      outline: none;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--text);
+      width: 100%;
+      min-width: 0;
+      font-family: inherit;
+    }
+    .input-wrap.is-calc input,
+    .input-wrap.is-locked input {
+      font-weight: 700;
+    }
+    /* hide spinners */
+    .input-wrap input::-webkit-inner-spin-button,
+    .input-wrap input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .input-wrap input[type=number] { -moz-appearance: textfield; }
+
+    /* ── Clear (×) button ── */
+    .clear-btn {
+      width: 26px;
+      height: 26px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: #bbb;
+      font-size: 1rem;
+      line-height: 1;
+      flex-shrink: 0;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s;
+    }
+    .clear-btn:hover { background: #ddd; color: #555; }
+
+    /* ── Lock button ── */
+    .lock-btn {
+      width: 33px;
+      height: 33px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-size: 1.05rem;
+      font-family: inherit;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .lock-btn:hover { background: rgba(0,0,0,0.07); }
+
+    /* ── Panels ── */
+    .profits-panel { display: none; }
+    .pricing-panel { display: block; }
+
+    /* ── Actions ── */
+    .actions {
+      display: flex;
+      gap: 11px;
+      padding: 13px 18px 15px;
+      border-top: 1px solid var(--border);
+      background: #f4f6fa;
+    }
+    .btn {
+      flex: 1;
+      padding: 11px;
+      border-radius: 9px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #e2e6ed; color: var(--text-muted); }
+    .btn-secondary:hover { background: #d0d6e0; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 35px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1a1f2e;
+      color: #fff;
+      padding: 11px 22px;
+      border-radius: 22px;
+      font-size: 0.85rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div class="page-header">Margin Calculator (Two-Tier)</div>
+
+<div class="card">
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('pricing')">Pricing</button>
+    <button class="tab" onclick="switchTab('profits')">Profits</button>
+  </div>
+
+  <!-- ══ PRICING PANEL ══ -->
+  <div id="pricingPanel" class="pricing-panel">
+
+    <!-- Vendor section -->
+    <div class="section-group">
+      <div class="row">
+        <span class="row-label">Vendor Cost</span>
+        <span class="sym" id="sym_vendorCost">$</span>
+        <div class="input-wrap" id="wrap_vendorCost">
+          <input type="number" id="vendorCost" min="0" step="0.01" placeholder="0.00"
+            oninput="onUserInput('vendorCost')"
+            onkeydown="trapTab(event,'vendorCost')" />
+        </div>
+        <button class="clear-btn" tabindex="-1" onclick="clearField('vendorCost')" title="Clear">×</button>
+        <button class="lock-btn" id="lock_vendorCost" tabindex="-1" onclick="toggleLock('vendorCost')" title="Lock field">🔓</button>
+      </div>
+      <div class="row">
+        <span class="row-label">Vendor Margin</span>
+        <span class="sym" id="sym_vendorMargin">%</span>
+        <div class="input-wrap" id="wrap_vendorMargin">
+          <input type="number" id="vendorMargin" min="0" max="99.99" step="0.01" placeholder="0.00"
+            oninput="onUserInput('vendorMargin')"
+            onkeydown="trapTab(event,'vendorMargin')" />
+        </div>
+        <button class="clear-btn" tabindex="-1" onclick="clearField('vendorMargin')" title="Clear">×</button>
+        <button class="lock-btn" id="lock_vendorMargin" tabindex="-1" onclick="toggleLock('vendorMargin')" title="Lock field">🔓</button>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Disty section -->
+    <div class="section-group">
+      <div class="row">
+        <span class="row-label">Disty Price</span>
+        <span class="sym" id="sym_distyPrice">$</span>
+        <div class="input-wrap" id="wrap_distyPrice">
+          <input type="number" id="distyPrice" min="0" step="0.01" placeholder="0.00"
+            oninput="onUserInput('distyPrice')"
+            onkeydown="trapTab(event,'distyPrice')" />
+        </div>
+        <button class="clear-btn" tabindex="-1" onclick="clearField('distyPrice')" title="Clear">×</button>
+        <button class="lock-btn" id="lock_distyPrice" tabindex="-1" onclick="toggleLock('distyPrice')" title="Lock field">🔓</button>
+      </div>
+      <div class="row">
+        <span class="row-label">Disty Margin</span>
+        <span class="sym" id="sym_distyMargin">%</span>
+        <div class="input-wrap" id="wrap_distyMargin">
+          <input type="number" id="distyMargin" min="0" max="99.99" step="0.01" placeholder="0.00"
+            oninput="onUserInput('distyMargin')"
+            onkeydown="trapTab(event,'distyMargin')" />
+        </div>
+        <button class="clear-btn" tabindex="-1" onclick="clearField('distyMargin')" title="Clear">×</button>
+        <button class="lock-btn" id="lock_distyMargin" tabindex="-1" onclick="toggleLock('distyMargin')" title="Lock field">🔓</button>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Reseller section -->
+    <div class="section-group">
+      <div class="row">
+        <span class="row-label">Reseller Price</span>
+        <span class="sym" id="sym_resellerPrice">$</span>
+        <div class="input-wrap" id="wrap_resellerPrice">
+          <input type="number" id="resellerPrice" min="0" step="0.01" placeholder="0.00"
+            oninput="onUserInput('resellerPrice')"
+            onkeydown="trapTab(event,'resellerPrice')" />
+        </div>
+        <button class="clear-btn" tabindex="-1" onclick="clearField('resellerPrice')" title="Clear">×</button>
+        <button class="lock-btn" id="lock_resellerPrice" tabindex="-1" onclick="toggleLock('resellerPrice')" title="Lock field">🔓</button>
+      </div>
+    </div>
+
+  </div><!-- /pricingPanel -->
+
+  <!-- ══ PROFITS PANEL ══ -->
+  <div id="profitsPanel" class="profits-panel">
+
+    <div class="section-group">
+      <div class="row">
+        <span class="row-label">Vendor Profit</span>
+        <span class="sym" id="sym_vendorProfit">$</span>
+        <div class="input-wrap" id="wrap_vendorProfit">
+          <input type="number" id="vendorProfit" min="0" step="0.01" placeholder="0.00"
+            oninput="onUserInput('vendorProfit')"
+            onkeydown="trapTab(event,'vendorProfit')" />
+        </div>
+        <button class="clear-btn" tabindex="-1" onclick="clearField('vendorProfit')" title="Clear">×</button>
+        <button class="lock-btn" id="lock_vendorProfit" tabindex="-1" onclick="toggleLock('vendorProfit')" title="Lock field">🔓</button>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-group">
+      <div class="row">
+        <span class="row-label">Disty Profit</span>
+        <span class="sym" id="sym_distyProfit">$</span>
+        <div class="input-wrap" id="wrap_distyProfit">
+          <input type="number" id="distyProfit" min="0" step="0.01" placeholder="0.00"
+            oninput="onUserInput('distyProfit')"
+            onkeydown="trapTab(event,'distyProfit')" />
+        </div>
+        <button class="clear-btn" tabindex="-1" onclick="clearField('distyProfit')" title="Clear">×</button>
+        <button class="lock-btn" id="lock_distyProfit" tabindex="-1" onclick="toggleLock('distyProfit')" title="Lock field">🔓</button>
+      </div>
+    </div>
+
+  </div><!-- /profitsPanel -->
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="copyResult()">Copy Result</button>
+    <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+  const locked  = new Set();
+  const userSet = new Set();
+  const calcSet = new Set();
+
+  const TAB_ORDER = ['vendorCost','vendorMargin','distyPrice','distyMargin','resellerPrice'];
+
+  function trapTab(e, fieldId) {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    const idx = TAB_ORDER.indexOf(fieldId);
+    const next = e.shiftKey
+      ? TAB_ORDER[(idx - 1 + TAB_ORDER.length) % TAB_ORDER.length]
+      : TAB_ORDER[(idx + 1) % TAB_ORDER.length];
+    document.getElementById(next).focus();
+  }
+
+  function val(id) {
+    const v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) ? null : v;
+  }
+
+  function setCalc(id, v) {
+    if (locked.has(id) || userSet.has(id)) return;
+    if (v === null || !isFinite(v)) return;
+    document.getElementById(id).value = Math.round(v * 100) / 100;
+    calcSet.add(id);
+    updateWrapStyle(id);
+  }
+
+  function updateWrapStyle(id) {
+    const wrap = document.getElementById('wrap_' + id);
+    const sym  = document.getElementById('sym_' + id);
+    if (!wrap) return;
+
+    wrap.classList.remove('is-locked', 'is-calc');
+    if (sym) sym.classList.remove('is-calc-sym', 'is-locked-sym');
+
+    if (locked.has(id)) {
+      wrap.classList.add('is-locked');
+      if (sym) sym.classList.add('is-locked-sym');
+    } else if (calcSet.has(id) && !userSet.has(id)) {
+      wrap.classList.add('is-calc');
+      if (sym) sym.classList.add('is-calc-sym');
+    }
+  }
+
+  function toggleLock(field) {
+    const btn = document.getElementById('lock_' + field);
+    if (locked.has(field)) {
+      locked.delete(field);
+      btn.textContent = '🔓';
+    } else {
+      locked.add(field);
+      btn.textContent = '🔒';
+    }
+    updateWrapStyle(field);
+  }
+
+  function clearField(id) {
+    document.getElementById(id).value = '';
+    userSet.delete(id);
+    calcSet.delete(id);
+    locked.delete(id);
+    document.getElementById('lock_' + id).textContent = '🔓';
+    updateWrapStyle(id);
+    recalcAll();
+  }
+
+  function onUserInput(id) {
+    const el = document.getElementById(id);
+    if (el.value === '') {
+      userSet.delete(id);
+      calcSet.delete(id);
+    } else {
+      userSet.add(id);
+      calcSet.delete(id);
+    }
+    updateWrapStyle(id);
+    recalcAll();
+  }
+
+  function recalcAll() {
+    const vc = val('vendorCost');
+    const vm = val('vendorMargin');
+    const dp = val('distyPrice');
+    const dm = val('distyMargin');
+    const rp = val('resellerPrice');
+
+    // Reset non-user, non-locked fields
+    ['vendorCost','vendorMargin','distyPrice','distyMargin','resellerPrice',
+     'vendorProfit','distyProfit'].forEach(id => {
+      if (!userSet.has(id) && !locked.has(id)) {
+        calcSet.delete(id);
+        document.getElementById(id).value = '';
+        updateWrapStyle(id);
+      }
+    });
+
+    // vc + vm → dp
+    if (vc !== null && vm !== null && vm < 100) {
+      setCalc('distyPrice', vc / (1 - vm / 100));
+    } else if (vc !== null && val('distyPrice') !== null && val('distyPrice') !== 0) {
+      setCalc('vendorMargin', (1 - vc / val('distyPrice')) * 100);
+    } else if (vm !== null && val('distyPrice') !== null && vm < 100) {
+      setCalc('vendorCost', val('distyPrice') * (1 - vm / 100));
+    }
+
+    // dp + dm → rp
+    const dp2 = val('distyPrice');
+    if (dp2 !== null && dm !== null && dm < 100) {
+      setCalc('resellerPrice', dp2 / (1 - dm / 100));
+    } else if (dp2 !== null && val('resellerPrice') !== null && val('resellerPrice') !== 0) {
+      setCalc('distyMargin', (1 - dp2 / val('resellerPrice')) * 100);
+    } else if (dm !== null && val('resellerPrice') !== null && dm < 100) {
+      setCalc('distyPrice', val('resellerPrice') * (1 - dm / 100));
+      const dp3 = val('distyPrice');
+      if (dp3 !== null && vc !== null && dp3 !== 0) {
+        setCalc('vendorMargin', (1 - vc / dp3) * 100);
+      }
+    }
+
+    // Profits
+    const vc2 = val('vendorCost');
+    const dp3 = val('distyPrice');
+    const rp2 = val('resellerPrice');
+    if (vc2 !== null && dp3 !== null) setCalc('vendorProfit', dp3 - vc2);
+    if (dp3 !== null && rp2 !== null) setCalc('distyProfit', rp2 - dp3);
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) =>
+      t.classList.toggle('active', (i === 0) === (tab === 'pricing'))
+    );
+    document.getElementById('pricingPanel').style.display = tab === 'pricing' ? 'block' : 'none';
+    document.getElementById('profitsPanel').style.display = tab === 'profits' ? 'block' : 'none';
+  }
+
+  function copyResult() {
+    const fields = [
+      { label: 'Vendor Cost',    id: 'vendorCost',    prefix: '$' },
+      { label: 'Vendor Margin',  id: 'vendorMargin',  suffix: '%' },
+      { label: 'Disty Price',    id: 'distyPrice',    prefix: '$' },
+      { label: 'Disty Margin',   id: 'distyMargin',   suffix: '%' },
+      { label: 'Reseller Price', id: 'resellerPrice', prefix: '$' },
+      { label: 'Vendor Profit',  id: 'vendorProfit',  prefix: '$' },
+      { label: 'Disty Profit',   id: 'distyProfit',   prefix: '$' },
+    ];
+    const lines = fields
+      .filter(f => val(f.id) !== null)
+      .map(f => `${f.label}: ${f.prefix||''}${val(f.id).toFixed(2)}${f.suffix||''}`);
+    navigator.clipboard.writeText(lines.join('\n')).then(() => showToast('Copied!'));
+  }
+
+  function clearAll() {
+    ['vendorCost','vendorMargin','distyPrice','distyMargin','resellerPrice',
+     'vendorProfit','distyProfit'].forEach(id => {
+      document.getElementById(id).value = '';
+      locked.delete(id);
+      userSet.delete(id);
+      calcSet.delete(id);
+      document.getElementById('lock_' + id).textContent = '🔓';
+      updateWrapStyle(id);
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+</script>
+</body>
+</html>
